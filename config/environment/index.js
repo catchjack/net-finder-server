@@ -7,7 +7,9 @@ let _ = require('lodash');
 let base = {
   env: process.env.NODE_ENV,
   root: path.normalize(__dirname + '/../../..'),
+  ip: process.env.IP,
   port: process.env.PORT || 3000,
+  domain: 'localhost:3000',
   logType : 'dev'
 };
 
