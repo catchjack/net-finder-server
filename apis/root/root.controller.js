@@ -4,6 +4,7 @@ import File from '../../models/files';
 import fs from 'fs';
 import path from 'path';
 import config from '../../config/environment';
+import {filyType, fileTypeArr, ext2FileType} from '../../lib/fileType';
 
 
 exports.index = function *(next){
@@ -11,22 +12,26 @@ exports.index = function *(next){
   this.body ='Hello world';
 }
 
+//type=picture"
 exports.get = function *() {
   let files = yield File.find();
+  let params = this.request.query;
   this.status = 200;
-  this.body = files;
-}
+  switch (params.type) {
+    case 'music':
+      this.body = files.filter(file => {
+        return file.typeFlag == filyType.MUSIC;
+      })
+      break;
+    case 'picture':
+      this.body = files.filter(file => {
+        return file.typeFlag == filyType.PICTURE;
+      })
+      break;
+    default:
+      this.body = files;
+  }
 
-exports.create = function* () {
-  let file = new File({
-    name: '1',
-    downloadUri: '1',
-    coverUri: '1',
-    addDate: new Date(),
-    type: '1',
-  });
-  let res = yield file.save();
-  this.body = res;
 }
 
 exports.upload = function *(next) {
@@ -36,7 +41,8 @@ exports.upload = function *(next) {
       let upfile = upfiles[i];
       let tmpath = upfile['path'];
       let ext ='.'+ upfile['name'].split('.').pop();
-      let newName = parseInt(Math.random()*100) + Date.parse(new Date()).toString() + ext;
+      let filename =upfile['name'].slice(0, -(ext.length));
+      let newName = `${filename}_${Date.parse(new Date()).toString()}${ext}`;
       let newpath = path.join(__dirname + '../../../public/files', newName);
 
       let stream = fs.createWriteStream(newpath);//创建一个可写流
@@ -44,11 +50,13 @@ exports.upload = function *(next) {
       let fileUrl = `http://${config.domain}/files/${newName}`;
 
       let newFile = {
-        name: newName,
+        name: filename,
+        uri: fileUrl,
         downloadUri: fileUrl,
         coverUri: fileUrl,
         addDate: new Date(),
-        type: '1',
+        type: upfile['type'],
+        typeFlag: ext2FileType[ext],
       }
       resBody.push(newFile);
     }
